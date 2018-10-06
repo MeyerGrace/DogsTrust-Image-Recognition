@@ -14,18 +14,17 @@
 
 library(httr)
 library(jsonlite)
-library(purrr)
 setwd("~/GitHub/image-recognition-MS-CVai")
 
 ## Read in a file of URLs of images of pugs, and also a file of grey hounds
 ## The URLs were sourced on 6 October 2018, but since then a few URLs have started
 ## if in the future urls to fail or return thumbnail "errors", so a manual review will be necessary (see below).
-hotdogs <- scan("pug.txt",what = character())
-nothotdogs <- scan("greyhound.txt", what = character())
+pug <- scan("pug.txt",what = character())
+greyhound <- scan("greyhound.txt", what = character())
 
-## NOTE: We created the files hotdogs-good.txt and nothotdogs-good.txt
+## NOTE: We created the files pug-good.txt and greyhound-good.txt
 ## using ImageNet data and some visual inspection. See the file
-## nothotdog-find-data.R if you want to see how it was done.
+## greyhound-find-data.R if you want to see how it was done.
 
 ## Retrieve API keys from keys.txt file, set API endpoint
 keys <- read.table("keys.txt", header = TRUE, stringsAsFactors = FALSE)
@@ -50,7 +49,7 @@ APIresponse = GET(url = domainsURL,
                    encode = "json")
 
 domains <- content(APIresponse)
-domains.Generic <- domains[[1]]$Id
+domains.Generic <- domains[[1]]$Id #this is where I select the generic domain
 
 ## Create a project
 createURL <- paste0(cvision_api_endpoint, "/projects?",
@@ -68,7 +67,7 @@ APIresponse = POST(url = createURL,
 cvision_id <- content(APIresponse)$Id
 
 ## Next, create tags we will use to label the images
-## We will use "hotdog" for hot dog images and "nothotdog" for similar looking foods
+## We will use "hotdog" for hot dog images and "greyhound" for similar looking foods
 ## We will save the tag ids returned by the API for use later
 
 ## function to create one tag, and return its id
@@ -85,9 +84,9 @@ createTag <- function(id, tagname) {
  content(APIresponse)$Id
 }
 
-hotdog_tag <- createTag(cvision_id, "hotdog")
-nothotdog_tag <- createTag(cvision_id, "nothotdog")
-tags <- c(hotdog = hotdog_tag, nothotdog=nothotdog_tag)
+pug_tag <- createTag(cvision_id, "pug")
+greyhound_tag <- createTag(cvision_id, "greyhound")
+tags <- c(pug = pug_tag, greyhound = greyhound_tag)
 
 ## Upload images to Custom Vision. We will cycle through lists of URLs
 ## provided in the txt files
@@ -118,8 +117,8 @@ uploadURLs <- function(id, tagname, urls) {
  all(success)
 }
 
-uploadURLs(cvision_id, tags["hotdog"], hotdogs)
-uploadURLs(cvision_id, tags["nothotdog"], nothotdogs)
+uploadURLs(cvision_id, tags["pug"], pug)
+uploadURLs(cvision_id, tags["greyhound"], greyhound)
 
 ## If either of the calls above returned FALSE, that means at least one image
 ## couldn't be uploaded. This is most likely due to a bad URL, and the
@@ -137,9 +136,9 @@ projURL <- paste0(cvision_api_endpoint, "/projects/")
 
 APIresponse = GET(url = projURL,
                    content_type_json(),
-                   add_headers(.headers= c('Training-key' = cvision_api_key)),
-                   body="",
-                   encode="json")
+                   add_headers(.headers = c('Training-key' = cvision_api_key)),
+                   body = "",
+                   encode = "json")
 
 projStatus <- content(APIresponse)
 
@@ -169,9 +168,9 @@ iterStatus <- function(id) {
 
  APIresponse = GET(url = iterURL,
                     content_type_json(),
-                    add_headers(.headers= c('Training-key' = cvision_api_key)),
-                    body="",
-                    encode="json")
+                    add_headers(.headers = c('Training-key' = cvision_api_key)),
+                    body = "",
+                    encode = "json")
 
  content(APIresponse)$Status
 }
@@ -195,68 +194,68 @@ iterStatus(train.id)
 ## With your prediction key in the keys.txt file we imported earlier,
 ## store the prediction key in cvision_api_endpoint_pred:
 cvision_api_endpoint_pred <- "https://southcentralus.api.cognitive.microsoft.com/customvision/v1.1/Prediction"
-cvision_pred_key <- keys["cvpred",1]
+cvision_pred_key <- keys["cvpred", 1]
 
 ## Function to generate predictions
 
-hotdog_predict <- function(imageURL, threshold = 0.5) {
+dog_predict <- function(imageURL, threshold = 0.5) {
  predURL <- paste0(cvision_api_endpoint_pred, "/", cvision_id,"/url?",
                    "iterationId=",train.id,
                    "&application=R"
                    )
 
- body.pred <- toJSON(list(Url=imageURL[1]), auto_unbox = TRUE)
+ body.pred <- toJSON(list(Url = imageURL[1]), auto_unbox = TRUE)
 
  APIresponse = POST(url = predURL,
                     content_type_json(),
                     add_headers(.headers= c('Prediction-key' = cvision_pred_key)),
-                    body=body.pred,
-                    encode="json")
+                    body = body.pred,
+                    encode = "json")
 
  out <- content(APIresponse)
 
- if(!is.null(out$Code)) msg <- paste0("Can't analyze: ", out$Message) else
+ if (!is.null(out$Code)) msg <- paste0("Can't analyze: ", out$Message) else
  {
-  predmat <- matrix(unlist(out$Predictions), nrow=3)
+  predmat <- matrix(unlist(out$Predictions), nrow = 3)
   preds <- as.numeric(predmat[3,])
   names(preds) <- predmat[2,]
 
   ## uncomment this to see the class predictions
   ## print(preds)
 
-  if (preds["hotdog"] > threshold) msg <- "Hotdog" else
-   if (preds["nothotdog"] > threshold) msg <- "Not Hotdog (but it looks delicious!)" else
-    msg <- "Not Hotdog"
+  if (preds["pug"] > threshold) msg <- "Pug" else
+   if (preds["greyhound"] > threshold) msg <- "Greyhound" else
+    msg <- "Don't know"
   }
 
   names(msg) <- imageURL[1]
   msg
 }
 
-hotdog_predict(hotdogs[1])
-hotdog_predict(nothotdogs[1])
+dog_predict(pug[1])
+dog_predict(greyhound[1])
 
 ## here are some images to try, from a Google Image Search for "hotdog
-example.hotdogs <- scan("train_pug.txt",what = character())
-example.nothotdogs <- scan("train_greyhound.txt",what = character())
+example.pug <- scan("train_pug.txt",what = character())
+example.greyhound <- scan("train_greyhound.txt",what = character())
 
-hotdog_predict(example.hotdogs[1])
-hotdog_predict(example.nothotdogs[1])
+dog_predict(example.pug[1])
+dog_predict(example.greyhound[1])
 
-for (i in 1:length(example.hotdogs)) {
-  print(hotdog_predict(example.hotdogs[i]))
+for (i in 1:length(example.pug)) {
+  print(dog_predict(example.pug[i]))
 }
 
-for (i in 1:length(example.nothotdogs)) {
-  print(hotdog_predict(example.nothotdogs[i]))
+for (i in 1:length(example.greyhound)) {
+  print(dog_predict(example.greyhound[i]))
 }
 
 ## Here's an example where the classification is wrong, at the 50% threshold
-#hotdog_predict(example.nothotdogs[4]) #I guess here I make sure that there is
+#hotdog_predict(example.greyhound[4]) #I guess here I make sure that there is
 
-## We can be more conservative, at the expense of misclassifying some actual hotdogs
-hotdog_predict(example.nothotdogs[2], threshold = 0.70)
-hotdog_predict(example.hotdogs[2], threshold = 0.7)
+## We can be more conservative, at the expense of misclassifying some actual pug
+dog_predict(example.greyhound[2], threshold = 0.70)
+dog_predict(example.pug[2], threshold = 0.7)
 
 
 
