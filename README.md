@@ -10,6 +10,8 @@ Amy Boyd and I worked on using MS customvision.ai manually through the GUI and t
 Tips:
 I found that when I ran line XX and created the project in the customvision.ai portal that I couldn't see it. I found out that I somehow have two accounts- one linked to my gmail and one to my gmail/microsoft. Once I switched I could see the new project. 
 
+David's code runs a food related project and mine a generic- see here https://docs.microsoft.com/en-us/azure/cognitive-services/custom-vision-service/getting-started-build-a-classifier
+
 Even when testing you need to have at least 5 images per tag.
 
 I used the prediction key from my azure and it worked though it was different to that in the customvision.ai prediction space
