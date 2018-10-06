@@ -1,5 +1,5 @@
 ## use the custom vision API to create a function that identifies
-## whether an image on the web is a hotdog or not
+## the breed of dog of an image given by the dogs trust
 
 ## You can see the effects of your API calls as you go by browsing to
 ## https://www.customvision.ai/projects and logging in with your Microsoft Account
@@ -17,14 +17,10 @@ library(jsonlite)
 setwd("~/GitHub/image-recognition-MS-CVai")
 
 ## Read in a file of URLs of images of pugs, and also a file of grey hounds
-## The URLs were sourced on 6 October 2018, but since then a few URLs have started
+## The URLs were sourced on 6 October 2018
 ## if in the future urls to fail or return thumbnail "errors", so a manual review will be necessary (see below).
-pug <- scan("pug.txt",what = character())
-greyhound <- scan("greyhound.txt", what = character())
-
-## NOTE: We created the files pug-good.txt and greyhound-good.txt
-## using ImageNet data and some visual inspection. See the file
-## greyhound-find-data.R if you want to see how it was done.
+pugTrain <- scan("pugTrain.txt",what = character())
+greyhoundTrain <- scan("greyhoundTrain.txt", what = character())
 
 ## Retrieve API keys from keys.txt file, set API endpoint
 keys <- read.table("keys.txt", header = TRUE, stringsAsFactors = FALSE)
@@ -67,7 +63,7 @@ APIresponse = POST(url = createURL,
 cvision_id <- content(APIresponse)$Id
 
 ## Next, create tags we will use to label the images
-## We will use "hotdog" for hot dog images and "greyhound" for similar looking foods
+## We will use "pug" for pug images and "greyhound" for greyhound images
 ## We will save the tag ids returned by the API for use later
 
 ## function to create one tag, and return its id
@@ -77,9 +73,9 @@ createTag <- function(id, tagname) {
 
  APIresponse = POST(url = eURL,
                     content_type_json(),
-                    add_headers(.headers= c('Training-key' = cvision_api_key)),
-                    body="",
-                    encode="json")
+                    add_headers(.headers = c('Training-key' = cvision_api_key)),
+                    body = "",
+                    encode = "json")
 
  content(APIresponse)$Id
 }
@@ -100,16 +96,16 @@ uploadURLs <- function(id, tagname, urls) {
  success <- logical(0)
 
  ## The API accepts 64 URLs at a time, max, so:
- while(length(urls) > 0) {
+ while (length(urls) > 0) {
 
   N <- min(length(urls), 64)
-  urls.body <- toJSON(list(TagIds=tagname, Urls=urls[1:N]))
+  urls.body <- toJSON(list(TagIds = tagname, Urls = urls[1:N]))
 
   APIresponse = POST(url = eURL,
                     content_type_json(),
-                    add_headers(.headers= c('Training-key' = cvision_api_key)),
-                    body=urls.body,
-                    encode="json")
+                    add_headers(.headers = c('Training-key' = cvision_api_key)),
+                    body = urls.body,
+                    encode = "json")
 
   success <- c(success,content(APIresponse)$IsBatchSuccessful)
   urls <- urls[-(1:N)]
@@ -117,8 +113,8 @@ uploadURLs <- function(id, tagname, urls) {
  all(success)
 }
 
-uploadURLs(cvision_id, tags["pug"], pug)
-uploadURLs(cvision_id, tags["greyhound"], greyhound)
+uploadURLs(cvision_id, tags["pug"], pugTrain)
+uploadURLs(cvision_id, tags["greyhound"], greyhoundTrain)
 
 ## If either of the calls above returned FALSE, that means at least one image
 ## couldn't be uploaded. This is most likely due to a bad URL, and the
@@ -198,7 +194,7 @@ cvision_pred_key <- keys["cvpred", 1]
 
 ## Function to generate predictions
 
-dog_predict <- function(imageURL, threshold = 0.5) {
+breed_predict <- function(imageURL, threshold = 0.5) {
  predURL <- paste0(cvision_api_endpoint_pred, "/", cvision_id,"/url?",
                    "iterationId=",train.id,
                    "&application=R"
@@ -232,30 +228,30 @@ dog_predict <- function(imageURL, threshold = 0.5) {
   msg
 }
 
-dog_predict(pug[1])
-dog_predict(greyhound[1])
+breed_predict(pugTrain[1])
+breed_predict(greyhoundTrain[1])
 
 ## here are some images to try, from a Google Image Search for "hotdog
-example.pug <- scan("train_pug.txt",what = character())
-example.greyhound <- scan("train_greyhound.txt",what = character())
+pugTest <- scan("pugTest.txt",what = character())
+greyhoundTest <- scan("greyhoundTest.txt",what = character())
 
-dog_predict(example.pug[1])
-dog_predict(example.greyhound[1])
+breed_predict(pugTest[1])
+breed_predict(greyhoundTest[1])
 
-for (i in 1:length(example.pug)) {
-  print(dog_predict(example.pug[i]))
+for (i in 1:length(pugTest)) {
+  print(breed_predict(pugTest[i]))
 }
 
-for (i in 1:length(example.greyhound)) {
-  print(dog_predict(example.greyhound[i]))
+for (i in 1:length(greyhoundTest)) {
+  print(breed_predict(greyhoundTest[i]))
 }
 
-## Here's an example where the classification is wrong, at the 50% threshold
-#hotdog_predict(example.greyhound[4]) #I guess here I make sure that there is
+## David has examples where the  classification is wrong, at the 50% threshold
+#so you can bump up the threshold to be higher
 
 ## We can be more conservative, at the expense of misclassifying some actual pug
-dog_predict(example.greyhound[2], threshold = 0.70)
-dog_predict(example.pug[2], threshold = 0.7)
+breed_predict(greyhoundTest[2], threshold = 0.70)
+breed_predict(pugTest[2], threshold = 0.7)
 
 
 
