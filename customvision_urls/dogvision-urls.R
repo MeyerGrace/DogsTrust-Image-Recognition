@@ -14,16 +14,36 @@
 
 library(httr)
 library(jsonlite)
+library(dplyr)
 setwd("~/GitHub/image-recognition-MS-CVai")
 
-## Read in a file of URLs of images of pugs, and also a file of grey hounds
-## The URLs were sourced on 6 October 2018
-## if in the future urls to fail or return thumbnail "errors", so a manual review will be necessary (see below).
-pugTrain <- scan("customvision_urls/pugTrain.txt",what = character())
-greyhoundTrain <- scan("customvision_urls/greyhoundTrain.txt", what = character())
-## here are some images to try, from a Google Image Search for "hotdog
-pugTest <- scan("customvision_urls/pugTest.txt",what = character())
-greyhoundTest <- scan("customvision_urls/greyhoundTest.txt",what = character())
+separateFiles <- FALSE #are your urls in different pre marked text files or in a csv?
+
+## Read in a file of URLs of images of different dogs that are labelled
+
+if (separateFiles) {
+  ## Read in a file of URLs of images of pugs, and also a file of grey hounds
+  ## The URLs were sourced on 6 October 2018
+  ## if in the future urls to fail or return thumbnail "errors", so a manual review will be necessary (see below).
+  pugTrain <- scan("customvision_urls/pugTrain.txt",what = character())
+  greyhoundTrain <- scan("customvision_urls/greyhoundTrain.txt", what = character())
+  ## here are some images to try, from a Google Image Search for the two breeds
+  pugTest <- scan("customvision_urls/pugTest.txt",what = character())
+  greyhoundTest <- scan("customvision_urls/greyhoundTest.txt",what = character())
+} else {
+  urls <- read.csv("customvision_urls/urls.csv", stringsAsFactors = FALSE)
+  breedClasses <- unique(urls$breed)
+  for (i in breedClasses) {
+    trainName <- paste0(i,"Train")
+    testName <- paste0(i,"Test")
+    breedUrls <- urls[urls$breed == i, "url"]
+    trainIndex <- sample(1:length(breedUrls), 0.8*length(breedUrls))
+    assign(trainName, breedUrls[trainIndex])
+    assign(testName, breedUrls[-trainIndex])
+  }
+}
+
+rm(trainName, testName, breedUrls, trainIndex, i, separateFiles, urls)
 
 ## Retrieve API keys from keys.txt file, set API endpoint
 keys <- read.table("keys.txt", header = TRUE, stringsAsFactors = FALSE)
@@ -31,7 +51,7 @@ keys <- read.table("keys.txt", header = TRUE, stringsAsFactors = FALSE)
 ## Check to see if the default keys.txt file is still there
 region <- keys["region", 1]
 if (region == "ERROR-EDIT-KEYS.txt-FILE") {
- stop("Edit the file keys.txt to provide valid keys. See README.md for details.")
+ stop("Edit the file keys.txt to provide valid keys. See David's README.md for details.")
 }
 
 ## retrieve custom vision key
@@ -207,7 +227,7 @@ breed_predict <- function(imageURL, threshold = 0.5) {
 
  APIresponse = POST(url = predURL,
                     content_type_json(),
-                    add_headers(.headers= c('Prediction-key' = cvision_pred_key)),
+                    add_headers(.headers = c('Prediction-key' = cvision_pred_key)),
                     body = body.pred,
                     encode = "json")
 
