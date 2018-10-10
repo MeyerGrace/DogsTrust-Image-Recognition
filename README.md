@@ -3,13 +3,16 @@ This is the code that was started in the R-Ladies London Dog Trust Hackathon on 
 
 We were given images of different dog breeds and asked to classify them as they have many unlabeled images and it would help them operationally to be able to search for images in a better way.
 
-## Using Microsoft customvision.ai
-Using MS custom vision to classify images from the Dogs Trust Hackathon
+Collaborator: Amy Boyd
 
-Amy Boyd and I worked on using MS customvision.ai manually through the GUI and then using David Smith's hotdog or notdog code from EARL (https://github.com/revodavid/nothotdog) to try and automate this process.
+## Using Microsoft customvision.ai
+Using MS custom vision to classify images from the Dogs Trust Hackathon. https://customvision.ai/
+
+### Manually in the GUI
+We first used MS customvision.ai manually through the GUI. You can load the images in and manually tag them and train and test. This was a good first step as a proof of concept.
 
 ### Images come from urls
-The tutorial by David Smith used urls and so I first did this to get the code working. 
+David Smith has an analysis where he uses the customvision API from R called hotdog or notdog code (https://github.com/revodavid/nothotdog) so the process can be automated. The tutorial uses urls and so I did this to get the code working. 
 
 ### Images come from the Dogs Trust and are kept as files on the project
 being worked on
