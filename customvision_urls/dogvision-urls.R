@@ -19,18 +19,20 @@ setwd("~/GitHub/image-recognition-MS-CVai")
 
 separateFiles <- FALSE #are your urls in different pre marked text files or in a csv?
 
-## Read in a file of URLs of images of different dogs that are labelled
+## Read in 1+ files of URLs of images of different dogs that are labelled
+## The URLs were sourced on 6 October 2018
+## if in the future urls to fail or return thumbnail "errors" a manual review will be necessary (see below).
 
 if (separateFiles) {
-  ## Read in a file of URLs of images of pugs, and also a file of grey hounds
-  ## The URLs were sourced on 6 October 2018
-  ## if in the future urls to fail or return thumbnail "errors", so a manual review will be necessary (see below).
+  ## Read in separate text files of URLs of images for train and test for pugs and greyhounds
+  breedClasses <- c("greyhound", "pug")
   pugTrain <- scan("customvision_urls/pugTrain.txt",what = character())
   greyhoundTrain <- scan("customvision_urls/greyhoundTrain.txt", what = character())
-  ## here are some images to try, from a Google Image Search for the two breeds
   pugTest <- scan("customvision_urls/pugTest.txt",what = character())
   greyhoundTest <- scan("customvision_urls/greyhoundTest.txt",what = character())
+
 } else {
+  ## Read in a csv of URLs of images which are labelled
   urls <- read.csv("customvision_urls/urls.csv", stringsAsFactors = FALSE)
   breedClasses <- unique(urls$breed)
   for (i in breedClasses) {
@@ -43,7 +45,7 @@ if (separateFiles) {
   }
 }
 
-rm(trainName, testName, breedUrls, trainIndex, i, separateFiles, urls)
+rm(trainName, testName, breedUrls, trainIndex, i, separateFiles)
 
 ## Retrieve API keys from keys.txt file, set API endpoint
 keys <- read.table("keys.txt", header = TRUE, stringsAsFactors = FALSE)
@@ -103,9 +105,23 @@ createTag <- function(id, tagname) {
  content(APIresponse)$Id
 }
 
-pug_tag <- createTag(cvision_id, "pug")
-greyhound_tag <- createTag(cvision_id, "greyhound")
-tags <- c(pug = pug_tag, greyhound = greyhound_tag)
+
+tags <- as.vector(0)
+for (i in 1:length(breedClasses)){
+  #assign(paste0(i, "_tag"), createTag(projectid,i))
+  tag_i <- breedClasses[i]
+  tag_i
+  tags[i] <- createTag(cvision_id, tag_i)
+  tags[i]
+
+}
+names(tags) <- breedClasses
+tags
+
+# this is how you do it separately
+# pug_tag <- createTag(cvision_id, "pug")
+# greyhound_tag <- createTag(cvision_id, "greyhound")
+# tags <- c(pug = pug_tag, greyhound = greyhound_tag)
 
 ## Upload images to Custom Vision. We will cycle through lists of URLs
 ## provided in the txt files
@@ -136,8 +152,14 @@ uploadURLs <- function(id, tagname, urls) {
  all(success)
 }
 
-uploadURLs(cvision_id, tags["pug"], pugTrain)
-uploadURLs(cvision_id, tags["greyhound"], greyhoundTrain)
+
+for (i in breedClasses) {
+  uploadURLs(cvision_id, tags[i], eval(parse(text = paste0(i,"Train"))))
+}
+
+#how to do it one by one
+# uploadURLs(cvision_id, tags["pug"], pugTrain)
+# uploadURLs(cvision_id, tags["greyhound"], greyhoundTrain)
 
 ## If either of the calls above returned FALSE, that means at least one image
 ## couldn't be uploaded. This is most likely due to a bad URL, and the
