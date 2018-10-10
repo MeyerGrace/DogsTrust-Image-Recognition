@@ -19,8 +19,11 @@ setwd("~/GitHub/image-recognition-MS-CVai")
 ## Read in a file of URLs of images of pugs, and also a file of grey hounds
 ## The URLs were sourced on 6 October 2018
 ## if in the future urls to fail or return thumbnail "errors", so a manual review will be necessary (see below).
-pugTrain <- scan("pugTrain.txt",what = character())
-greyhoundTrain <- scan("greyhoundTrain.txt", what = character())
+pugTrain <- scan("customvision_urls/pugTrain.txt",what = character())
+greyhoundTrain <- scan("customvision_urls/greyhoundTrain.txt", what = character())
+## here are some images to try, from a Google Image Search for "hotdog
+pugTest <- scan("customvision_urls/pugTest.txt",what = character())
+greyhoundTest <- scan("customvision_urls/greyhoundTest.txt",what = character())
 
 ## Retrieve API keys from keys.txt file, set API endpoint
 keys <- read.table("keys.txt", header = TRUE, stringsAsFactors = FALSE)
@@ -49,8 +52,8 @@ domains.Generic <- domains[[1]]$Id #this is where I select the generic domain
 
 ## Create a project
 createURL <- paste0(cvision_api_endpoint, "/projects?",
-                    "name=dogstrust2app&",
-                    'description=dogstrust2&',
+                    "name=DogUrlImages&",
+                    'description=DogUrlImages&',
                     'domainId=',
                     domains.Generic)
 
@@ -230,10 +233,6 @@ breed_predict <- function(imageURL, threshold = 0.5) {
 
 breed_predict(pugTrain[1])
 breed_predict(greyhoundTrain[1])
-
-## here are some images to try, from a Google Image Search for "hotdog
-pugTest <- scan("pugTest.txt",what = character())
-greyhoundTest <- scan("greyhoundTest.txt",what = character())
 
 breed_predict(pugTest[1])
 breed_predict(greyhoundTest[1])
