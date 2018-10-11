@@ -116,7 +116,6 @@ for (i in 1:length(breedClasses)){
 
 }
 names(tags) <- breedClasses
-tags
 
 # this is how you do it separately
 # pug_tag <- createTag(cvision_id, "pug")
@@ -240,8 +239,8 @@ cvision_pred_key <- keys["cvpred", 1]
 ## Function to generate predictions
 
 breed_predict <- function(imageURL, threshold = 0.5) {
- predURL <- paste0(cvision_api_endpoint_pred, "/", cvision_id,"/url?",
-                   "iterationId=",train.id,
+ predURL <- paste0(cvision_api_endpoint_pred, "/", cvision_id, "/url?",
+                   "iterationId=", train.id,
                    "&application=R"
                    )
 
@@ -257,20 +256,26 @@ breed_predict <- function(imageURL, threshold = 0.5) {
 
  if (!is.null(out$Code)) msg <- paste0("Can't analyze: ", out$Message) else
  {
-  predmat <- matrix(unlist(out$Predictions), nrow = 3)
-  preds <- as.numeric(predmat[3,])
-  names(preds) <- predmat[2,]
+   predmat <- matrix(unlist(out$Predictions), nrow = 3)
+   preds <- as.numeric(predmat[3,])
+   names(preds) <- predmat[2,]
 
-  ## uncomment this to see the class predictions
-  ## print(preds)
+   ## uncomment this to see the class predictions
+   ## print(preds)
 
-  if (preds["pug"] > threshold) msg <- "Pug" else
-   if (preds["greyhound"] > threshold) msg <- "Greyhound" else
-    msg <- "Don't know"
-  }
+   if (max(preds) > threshold) {
+     msg <- names(preds)[which(preds == max(preds))]
+   } else {
+     msg <- "Unsure"
+   }
 
-  names(msg) <- imageURL[1]
-  msg
+   # if (preds["pug"] > threshold) msg <- "Pug" else
+   #  if (preds["greyhound"] > threshold) msg <- "Greyhound" else
+   #   msg <- "Don't know"
+ }
+
+ msg <- c(imageURL[1], msg, max(preds))
+ return(msg)
 }
 
 breed_predict(pugTrain[1])
@@ -286,6 +291,31 @@ for (i in 1:length(pugTest)) {
 for (i in 1:length(greyhoundTest)) {
   print(breed_predict(greyhoundTest[i]))
 }
+
+testResults <- data.frame(label = "A",
+                          url = "A",
+                          prediction = "A",
+                          probability = "A",
+                          stringsAsFactors = FALSE)
+for (i in breedClasses) {
+  #print(i)
+  testUrls <- eval(parse(text = paste0(i,"Test")))
+  #print(testUrls)
+  for (j in testUrls) {
+    #print(j)
+    testPred <- breed_predict(j)
+    Sys.sleep(5)
+    #print(testPred)
+    testPred <- c(i, testPred)
+    #print(testPred)
+    testResults <- rbind(testResults, testPred)
+    #print(testResults)
+  }
+}
+
+testResults <- testResults[-1, ]
+
+accuracy <- mean(testResults$label == testResults$prediction)
 
 ## David has examples where the  classification is wrong, at the 50% threshold
 #so you can bump up the threshold to be higher
