@@ -99,6 +99,10 @@ names(tags) <- breedClasses
 # tags <- c(pug = pug_tag, greyhound = greyhound_tag)
 
 ## Upload images to Custom Vision. We will cycle through a folder of image files
+#https://stackoverflow.com/questions/44126333/python-method-to-upload-an-image-to-microsoft-cognitive-vision-from-local-machin
+#https://www.r-bloggers.com/microsoft-cognitive-services-vision-api-in-r/
+
+library(imager)
 
 uploadFiles <- function(id, tagname, files) {
   ## id: Project ID
@@ -112,13 +116,12 @@ uploadFiles <- function(id, tagname, files) {
   while (length(files) > 0) {
 
     N <- min(length(files), 64)
-    files.body <- toJSON(list(TagIds = tagname, images = files[1:N]))
+    files.body <- list(TagIds = tagname, img_data = load.image(files[1:N]))
 
     APIresponse = POST(url = eFiles,
-                       content_type_json(),
-                       add_headers(.headers = c('Training-key' = cvision_api_key)),
+                       add_headers(.headers = c('Training-key' = cvision_api_key, 'Content-Type' = 'application/octet-stream')),
                        body = files.body,
-                       encode = "json")
+                       encode = "multipart")
 
     success <- c(success,content(APIresponse)$IsBatchSuccessful)
     files <- files[-(1:N)]
